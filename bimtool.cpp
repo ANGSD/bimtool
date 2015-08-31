@@ -11,8 +11,21 @@
 
 #include "../reffinder/refFinder.h"
 
+#define LENS 2048
 
-int copy_file (const char *in, const char *out){
+int fexists(const char* str){///@param str Filename given as a string.
+  struct stat buffer ;
+  return (stat(str, &buffer )==0 ); /// @return Function returns 1 if file exists.
+}
+
+size_t fsize(const char* fname){
+  struct stat st ;
+  stat(fname,&st);
+  return st.st_size;
+}
+
+int copy_file (char *in,char *out){
+  fprintf(stderr,"\t-> Will copy: %s to %s\n",in,out);
   //  int BUFSIZ = 8192;
   char buf[BUFSIZ];
   size_t size;
@@ -30,6 +43,19 @@ int copy_file (const char *in, const char *out){
 
   return 0;
 }
+
+char *makename(char *name,char *extension){
+  char *newname=new char[LENS];
+  newname=strcat(newname,name);
+  newname=strcat(newname,extension);
+  while(fexists(newname))
+    newname=strcat(newname,extension);
+  
+  fprintf(stderr,"\t-> Output filename will be: %s\n",newname);
+  fprintf(stderr,"%s\n",name);
+  return newname;
+}
+
 
 
 struct cmp_str { 
@@ -100,7 +126,7 @@ bool operator!=(const info &lhs,const info &rhs){
 }
 
 
-#define LENS 2048
+
 
 char *buf=new char[LENS];
 char *buf2=new char[LENS];
@@ -195,7 +221,10 @@ int flipstrand(int argc,char**argv){
     fprintf(stderr,"\t assuming info=%s bimfile=%s\n",argv[0],argv[1]);
 
   }
-  
+    
+  char *newname = makename(argv[1],".original");
+  copy_file(argv[1],newname);
+
   typedef std::map<char*,info,cmp_str> assoRs;
   typedef std::map<char*,info,cmp_str> assoChrPos;
   assoRs as;
@@ -259,6 +288,8 @@ int flipstrand(int argc,char**argv){
     acp.erase(cpdup[i]);
   
   fprintf(stderr,"Unique positions in annotaionfile using rsnumbers:%lu using chr_pos:%lu\n",as.size(),acp.size());
+  
+  
   return 0;
 }
 
