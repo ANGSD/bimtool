@@ -212,6 +212,48 @@ int checkstrand(int argc,char**argv){
   fprintf(stderr,"WRONG:%lu RIGHT:%lu\n",dd[0],dd[1]);
 }
 
+
+int noannoying(int argc,char**argv){
+  fprintf(stderr,"argc:%d argv:%s\n",argc,*argv);
+  if(argc!=1){
+    fprintf(stderr," checkstrandfile.bim\n");
+    return 0;
+  }else{
+    fprintf(stderr,"\t assuming bimfile=%s\n",argv[0],argv[1]);
+  }
+  fprintf(stderr,"\t-> Program will only only print out the variable sites with A<->C and T<->G mutations removed\n");
+
+  FILE *fp = fopen(argv[0],"rb");
+  size_t nbad=0;
+  while(fgets(buf,LENS,fp)){
+    buf2=strcpy(buf2,buf);
+    char *tok = strtok(buf,"\n\r\t ");
+    char *rs=strtok(NULL,"\n\r\t ");
+    char *pos1=strtok(NULL,"\n\r\t ");
+    char *pos=strtok(NULL,"\n\r\t ");
+    char al1=strtok(NULL,"\n\r\t ")[0];
+    char al2=strtok(NULL,"\n\r\t ")[0];
+    if(al1=='0'||al2=='0')
+      continue;
+    int a,b;
+    a=refToInt[al1];
+    b=refToInt[al2];
+    assert(a!=b);
+    if(a==1&&b==2||a==2&&b==1){
+      nbad++;
+      continue;
+    }
+    if(a==0&&b==3||a==3&&b==0){
+      nbad++;
+      continue;
+    }
+    fprintf(stdout,"%s",buf2);
+  }
+  fprintf(stderr,"\t-> Removed: %lu of the bad annoying snps\n",nbad);
+  fclose(fp);
+}
+
+
 int flipstrand(int argc,char**argv){
   fprintf(stderr,"argc:%d argv:%s\n",argc,*argv);
   if(argc!=2){
@@ -342,6 +384,8 @@ int flipstrand(int argc,char**argv){
 int main(int argc,char**argv){
   if(argc==1){
     fprintf(stderr,"possible options\n\t 1) checkstrand hg19.fa.gz file.bim\n\t\t This will give you the entries that doesnt match \n");
+    fprintf(stderr,"\t 2) flipstrand infofile bimfile\n");
+    fprintf(stderr,"\t 2) noannoying bimfile\n");
     return 0;
   }
   argc--;++argv;  
@@ -349,11 +393,14 @@ int main(int argc,char**argv){
     return checkstrand(--argc,++argv);
   if(!strcasecmp(*argv,"flipstrand"))
     return flipstrand(--argc,++argv);
+  if(!strcasecmp(*argv,"noannoying"))
+    return noannoying(--argc,++argv);
   
 
   typedef std::map<char*,dat,cmp_str> asso;
   FILE *fp = fopen("filtered.bim","rb");//<-assumed hg19 strand and super
   asso en;
+  char buf[LENS];
   while(fgets(buf,LENS,fp)){
     char *tok = strtok(buf,"\n\r\t ");
     char *rs=strtok(NULL,"\n\r\t ");
