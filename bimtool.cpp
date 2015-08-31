@@ -286,8 +286,52 @@ int flipstrand(int argc,char**argv){
     as.erase(rsdup[i]);
   for(unsigned i=0;i<cpdup.size();i++)
     acp.erase(cpdup[i]);
+  fclose(fp);
+  fprintf(stderr,"\t-> Unique positions in annotaionfile using rsnumbers:%lu using chr_pos:%lu\n",as.size(),acp.size());
   
-  fprintf(stderr,"Unique positions in annotaionfile using rsnumbers:%lu using chr_pos:%lu\n",as.size(),acp.size());
+  fp=fopen(newname,"rb");
+  while(fgets(buf,LENS,fp)){
+    char *tok = strtok(buf,"\n\r\t ");
+    char *rs=strtok(NULL,"\n\r\t ");
+    char *pos1=strtok(NULL,"\n\r\t ");
+    char *pos=strtok(NULL,"\n\r\t ");
+    char al1=strtok(NULL,"\n\r\t ")[0];
+    char al2=strtok(NULL,"\n\r\t ")[0];
+    char *key=(char*)calloc(LENS,sizeof(char));
+    snprintf(key,LENS,"%s_%s",tok,pos);
+    assoRs::iterator it = as.find(rs);
+    assoChrPos::iterator it2 = acp.find(key);
+    info inf;
+    if(!strcmp(rs,"---")||!strcmp(key,"---_--=")||!strcmp(key,"0_0"))
+      fprintf(stdout,"0\t---\t%s\t0\t%c\t%c\n",pos1,al1,al2);
+    else{
+      if(it==as.end() && it2==acp.end()){
+	fprintf(stdout,"0\t---\t%s\t0\t%c\t%c\n",pos1,al1,al2);
+	continue;
+      }else if (it!=as.end() && it2!=acp.end()){ 
+	if(it->second!=it2->second){
+	  fprintf(stderr,"rs number and chr_pos doesnt match :%s vs %s\n",rs,key);
+	  fprintf(stdout,"0\t---\t%s\t0\t%c\t%c\n",pos1,al1,al2);
+	  continue;
+	}else
+	  inf=it->second;
+      }else if (it!=as.end() && it2==acp.end()) {
+	inf=it->second;
+      }else if (it==as.end() && it2!=acp.end()) 
+	inf=it2->second;
+      if(inf.strand==0){
+	fprintf(stdout,"0\t---\t%s\t0\t%c\t%c\n",pos1,al1,al2);
+	continue;
+      }
+      fprintf(stdout,"%s\t%s\t%s\t%s\t",inf.chr,inf.rs,pos1,inf.bp);
+      if(inf.strand==1)
+	fprintf(stdout,"%c\t%c\n",al1,al2);
+      else
+	fprintf(stdout,"%c\t%c\n",flip(al1),flip(al2));
+    }
+    
+  }
+
   
   
   return 0;
